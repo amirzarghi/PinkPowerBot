@@ -238,3 +238,42 @@ function DelMessage(ctx) {
         console.log("Del Error")
     }
 }
+
+async function postMessage(client, ctx) {
+    const gsapi = google.sheets({ version: 'v4', auth: client })
+    const opt = {
+        spreadsheetId: process.env.SPREADSHEETID,
+        range: `test!A1:A16`
+    }
+    let res = await gsapi.spreadsheets.values.get(opt)
+    let values = res.data.values
+    values.splice(0, 1, -99999999)
+    values.sort()
+    for (i = 1; i < values.length; i++) {
+        if (values[i][0] != values[i - 1][0]) {
+            ctx.telegram.sendMessage(values[i][0], "Post Message")
+        }
+    }
+}
+
+async function loginCheck(client, ctx) {
+    let logged = 0
+    const gsapi = google.sheets({ version: 'v4', auth: client })
+    const checkOpt = {
+        spreadsheetId: process.env.SPREADSHEETID,
+        range: `test!A1:A1000`
+    }
+    let res = await gsapi.spreadsheets.values.get(checkOpt)
+    let values = res.data.values
+    for (i = 1; i < values.length; i++) {
+        if (ctx.chat.id == values[i]) {
+            ctx.reply("You have submitted already!")
+            logged = 1
+            break
+        }
+    }
+    if (logged == 0) {
+        ctx.reply("Submitted!")
+        gsComUpdate(client, [[ctx.chat.id, ctx.message.from.username]])
+    }
+}
